@@ -1,5 +1,5 @@
-import { atom, selector } from "recoil";
-
+import { atom, selector, SetterOrUpdater } from "recoil";
+import { produce } from "immer";
 export const PIECE = {
   EMPTY: "EMPTY",
   BLACK: "BLACK",
@@ -13,6 +13,7 @@ export interface Position {
 }
 
 export interface BoardState {
+  currentPiece: Piece;
   recentlyPlaced: null | Position;
   positions: Piece[][];
 }
@@ -22,12 +23,26 @@ export type BoardUiState = string[][];
 const boardState = atom<BoardState>({
   key: "boardState",
   default: {
+    currentPiece: "BLACK",
     recentlyPlaced: null,
     positions: Array.from<Piece[][], Piece[]>({ length: 15 }, () =>
       Array.from<Piece[], Piece>({ length: 15 }, () => "EMPTY")
     ),
   },
 });
+
+// controller
+const putPiece = (
+  dispatch: SetterOrUpdater<BoardState>,
+  position: Position,
+  piece: Piece
+) => {
+  dispatch((boardState) =>
+    produce(boardState, (draft) => {
+      draft.positions[position.r][position.c] = piece;
+    })
+  );
+};
 
 const boardUiState = selector<BoardUiState>({
   key: "boardUiState",
@@ -40,4 +55,4 @@ const boardUiState = selector<BoardUiState>({
   },
 });
 
-export { boardState, boardUiState };
+export { boardState, boardUiState, putPiece };

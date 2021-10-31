@@ -16,25 +16,133 @@ const getPiece = (boardState: BoardState, position: Position): Piece => {
   return boardState.positions[position.r][position.c];
 };
 
-const willWinWhoPlacedLastStone = (boardState: BoardState): boolean => {
-  if (boardState.recentlyPlaced === null) {
-    return false;
+enum Direction {
+  horizontal, // -
+  vertical, // |
+  diagonal, // /
+  antiDiagonal, // \
+}
+
+/**
+ * 방향에 따라 다음방향의 논리적인 POSITION을 뱉어주는 함수
+ *
+ * @param boardState 현재까지의 게임 상태
+ * @param direction 방위
+ * @param position 현재 위치
+ * @returns 다음 위치
+ */
+const getNext = (
+  boardState: BoardState,
+  direction: Direction,
+  position: Position
+): null | Position => {
+  const { r, c } = position;
+  switch (direction) {
+    case Direction.horizontal:
+      if (c + 1 < boardState.positions[r].length) {
+        return { r, c: c + 1 };
+      } else return null;
+    case Direction.vertical:
+      if (r + 1 < boardState.positions.length) {
+        return { r: r + 1, c };
+      } else return null;
+    case Direction.diagonal: // /
+      if (r - 1 >= 0 && c + 1 < boardState.positions[r].length) {
+        return { r: r - 1, c: c + 1 };
+      } else return null;
+    case Direction.antiDiagonal: // \
+      if (
+        r + 1 < boardState.positions.length &&
+        c + 1 < boardState.positions[r].length
+      ) {
+        return { r: r + 1, c: c + 1 };
+      } else return null;
   }
-  // TODO
-  return true;
 };
 
-const willthreethree = (boardState: BoardState): boolean => {
-  if (boardState.recentlyPlaced === null) {
-    return false;
+/**
+ * 방향에 따라 이전방향의 논리적인 POSITION을 뱉어주는 함수
+ *
+ * @param boardState 현재까지의 게임 상태
+ * @param direction 방위
+ * @param position 현재 위치
+ * @returns 이전 위치
+ */
+const getPrev = (
+  boardState: BoardState,
+  direction: Direction,
+  position: Position
+): null | Position => {
+  const { r, c } = position;
+  switch (direction) {
+    case Direction.horizontal:
+      if (c - 1 >= 0) {
+        return { r, c: c - 1 };
+      } else return null;
+    case Direction.vertical:
+      if (r - 1 >= 0) {
+        return { r: r - 1, c };
+      } else return null;
+    case Direction.diagonal: // /
+      if (r + 1 < boardState.positions.length && c - 1 >= 0) {
+        return { r: r + 1, c: c - 1 };
+      } else return null;
+    case Direction.antiDiagonal: // \
+      if (r - 1 >= 0 && c - 1 >= 0) {
+        return { r: r - 1, c: c - 1 };
+      } else return null;
   }
-  // TODO
-  // https://namu.wiki/w/%EC%98%A4%EB%AA%A9/%EB%A3%B0%EC%9D%98%20%EC%A2%85%EB%A5%98#s-2.1
-  //  렌주에서 '3'은 단순히 돌 세개가 연속으로 있는 걸 말하는 게 아니다.
-  // '3'이라 함은 한 수를 추가 했을 때 '열린 4' 를 만들 수 있는 상태를 말한다.
-  // 그러므로 '3-3'은 3이 동시에 두 개가 발생하여 상대편이 한 쪽을 막아도
-  // 다른 쪽으로 열린 4를 만들게 되는 지점을 뜻하고 이게 착수금지되는 것이다.
-  return true;
 };
 
-export { willWinWhoPlacedLastStone, isBlack, isWhite, isEmpty, willthreethree };
+/**
+ * OOOO 이면서, 양쪽이 비어있고, 뚫려있는 쪽 바로 옆에 같은 색이 없으면 true
+ *
+ * 검X검검검검X검     X검검검검X검     검X검검검검X-> 이런건 안됨
+ *
+ * 흰X검검검검X흰     XX검검검검XX -> 이런건 됨
+ *
+ * @param boardState 현재까지의 게임 상태
+ * @param direction 체크할 방위
+ * @param position 체크할 위치
+ * @returns 열린 4라면 true
+ */
+const isOpen4 = (
+  boardState: BoardState,
+  direction: Direction,
+  position: Position
+) => {
+  const color = getPiece(boardState, position);
+  if (color === "EMPTY") return false;
+  const { r, c } = position;
+};
+
+/**
+ *
+ * @param boardState 현재까지의 게임 상태
+ * @param direction 체크할 방위
+ * @param position 곧 둘 위치
+ * @returns 곧 둘 위치에 둘 때 인자의 방위쪽으로 열린 4가 될 가능성이 있다면 true
+ */
+const willThree = (
+  boardState: BoardState,
+  direction: Direction,
+  position: Position
+): boolean => {
+  /*
+  3 체크하는 법
+일단 그곳에 착수한다.
+착수 후 ○○○  패턴의 경우 양쪽에 하나씩 추가해 보아 ‘열린 4’가 나타나는지 관찰한다.
+
+착수 후 ○○✕○ 패턴의 경우 중간에 넣어서 ‘열린 4’가 나타나는지 관찰한다.
+
+열린 4 체크하는 법
+양쪽이 뚫려있어야 하는 건 물론이고 뚫려있는 쪽 옆에 ‘같은 색’이 들어가면 안 된다.
+
+○○✕○ 패턴-> 직접 6가지 경우의 수를 조사해서 직접 집어넣어 본다.
+
+○○○ 패턴-> 왼쪽이나 오른쪽에 집어넣어 본다.
+*/
+  return false;
+};
+
+export { isBlack, isWhite, isEmpty, willThree, Direction };
