@@ -121,7 +121,6 @@ const isOpen4 = (
   while (positionPtr !== null) {
     if (getPiece(boardState, positionPtr) === color) {
       count++;
-      if (count > 4) return false;
     } else {
       break;
     }
@@ -132,7 +131,6 @@ const isOpen4 = (
   while (positionPtr !== null) {
     if (getPiece(boardState, positionPtr) === color) {
       count++;
-      if (count > 4) return false;
     } else {
       break;
     }
