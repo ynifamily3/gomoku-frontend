@@ -113,7 +113,43 @@ const isOpen4 = (
 ) => {
   const color = getPiece(boardState, position);
   if (color === "EMPTY") return false;
-  const { r, c } = position;
+  // 4 check
+  let count = -1; // 왼편체크와 오른편체크에서 각각 중복으로 본인을 세므로 -1
+  let leftPtr: null | Position = null; // null이면 valid한 위치가 아님 (벗어남)
+  let rightPtr: null | Position = null; // 한 칸 벗어난 위치
+  let positionPtr: null | Position = { ...position };
+  while (positionPtr !== null) {
+    if (getPiece(boardState, positionPtr) === color) {
+      count++;
+      if (count > 4) return false;
+    } else {
+      break;
+    }
+    positionPtr = getNext(boardState, direction, positionPtr);
+    rightPtr = positionPtr ? { ...positionPtr } : null;
+  }
+  positionPtr = { ...position };
+  while (positionPtr !== null) {
+    if (getPiece(boardState, positionPtr) === color) {
+      count++;
+      if (count > 4) return false;
+    } else {
+      break;
+    }
+    positionPtr = getPrev(boardState, direction, positionPtr);
+    leftPtr = positionPtr ? { ...positionPtr } : null;
+  }
+  if (count !== 4) return false;
+  // 양쪽이 비어있는지 체크 (empty가 아니거나 null이면 false)
+  if (leftPtr === null || rightPtr === null) return false;
+  if (getPiece(boardState, leftPtr) !== "EMPTY") return false;
+  if (getPiece(boardState, rightPtr) !== "EMPTY") return false;
+  // 뚫려있는 쪽 바로 옆에 같은 색이 없으면 true
+  const leftleft = getPrev(boardState, direction, leftPtr);
+  if (leftleft && getPiece(boardState, leftleft) === color) return false;
+  const rightright = getNext(boardState, direction, rightPtr);
+  if (rightright && getPiece(boardState, rightright) === color) return false;
+  return true;
 };
 
 /**
