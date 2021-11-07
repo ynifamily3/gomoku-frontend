@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
-import { Fragment, useReducer } from "react";
+import { Fragment, useEffect, useReducer, useRef } from "react";
 import { DeepReadonly } from "ts-essentials";
+import { io, Socket } from "socket.io-client";
 
 const now = dayjs();
 
@@ -61,6 +62,7 @@ const reducer = (state: ChattingState, action: ChattingAction) => {
 };
 
 const Chatting = () => {
+  const socketRef = useRef<Socket>();
   const [state, dispatch] = useReducer<typeof reducer>(reducer, initialState);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -87,7 +89,30 @@ const Chatting = () => {
       },
     });
     e.currentTarget.value = "";
+    if (!socketRef.current) return;
+    socketRef.current.emit("msg", value);
   };
+
+  useEffect(() => {
+    const socket = io("http://localhost:4000/chat");
+    socketRef.current = socket; // emit
+    socket.on("msg", (msg: ChattingContent) => {
+      dispatch({
+        type: "say",
+        payload: {
+          user: {
+            userId: 2,
+            nickname: "아무개",
+          },
+          content: msg,
+        },
+      });
+    });
+    return () => {
+      socket.close();
+    };
+  }, []);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "320px" }}>
       <div
