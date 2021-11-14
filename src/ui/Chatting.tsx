@@ -1,57 +1,55 @@
 import dayjs from "dayjs";
 import { Fragment, useEffect, useReducer, useRef } from "react";
 import { DeepReadonly } from "ts-essentials";
-import { io, Socket } from "socket.io-client";
-
-const now = dayjs();
+import io from "socket.io-client";
+import { getUUID } from "../util/uuid";
 
 interface ChattingUser {
-  userId: number;
+  userId: string;
   nickname: string;
 }
 
 type ChattingContent =
   | {
-      type: "text";
+      type: "text"; // 일반적인 채팅 말풍선
       user: ChattingUser;
       content: string;
       date: dayjs.Dayjs;
     }
   | {
-      type: "date";
+      type: "date"; // 날짜 변동시 날짜변경선을 안내해 준다.
       date: dayjs.Dayjs;
     };
 
 const todayMessage: DeepReadonly<ChattingContent> = {
   type: "date",
-  date: now,
+  date: dayjs(),
 };
 
 interface ChattingState {
-  user: ChattingUser; // me
-  contents: ChattingContent[];
+  user: ChattingUser; // -> 본인 정보 (추후에 이 정보는 필요없어진다.)
+  channel: string; // 채팅하고 있는 곳 (채널)
+  contents: ChattingContent[]; // 채팅 컨텍스트
 }
 
-type ChattingAction =
-  | {
-      type: "say";
-      payload: { content: ChattingContent; user: ChattingUser };
-    }
-  | { type: "date"; payload: { content: ChattingContent } };
+type ChattingAction = {
+  type: "ADD_CONTENT";
+  payload: ChattingContent;
+};
 
 const initialState: ChattingState = {
   user: {
-    userId: 1,
-    nickname: "미엘",
+    userId: "",
+    nickname: "손님",
   },
+  channel: "",
   contents: [todayMessage],
 };
 
 const reducer = (state: ChattingState, action: ChattingAction) => {
   switch (action.type) {
-    case "say":
-    case "date":
-      const contents = [...state.contents, action.payload.content].slice(-100); // 최근 100건의 대화만 살림
+    case "ADD_CONTENT":
+      const contents = [...state.contents, action.payload].slice(-100); // 최근 100건의 대화만 살림
       return {
         ...state,
         contents,
@@ -62,8 +60,15 @@ const reducer = (state: ChattingState, action: ChattingAction) => {
 };
 
 const Chatting = () => {
-  const socketRef = useRef<Socket>();
-  const [state, dispatch] = useReducer<typeof reducer>(reducer, initialState);
+  const socketRef = useRef<any>();
+  const uuid = getUUID();
+  const [state, dispatch] = useReducer<typeof reducer>(reducer, {
+    ...initialState,
+    user: {
+      ...initialState.user,
+      userId: uuid,
+    },
+  });
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") {
@@ -77,15 +82,12 @@ const Chatting = () => {
     }
     const value = value_.replaceAll("  ", " \u00a0");
     dispatch({
-      type: "say",
+      type: "ADD_CONTENT",
       payload: {
         user: state.user,
-        content: {
-          type: "text",
-          content: value,
-          user: state.user, // 본인이 말하는 경우
-          date: dayjs(),
-        },
+        content: value,
+        date: dayjs(),
+        type: "text",
       },
     });
     e.currentTarget.value = "";
@@ -94,21 +96,20 @@ const Chatting = () => {
   };
 
   useEffect(() => {
-    const socket = io("http://localhost:4000/chat");
+    console.log("uuid:", uuid);
+  }, [uuid]);
+
+  useEffect(() => {
+    const socket = io("http://localhost:4000");
     socketRef.current = socket; // emit
-    socket.on("msg", (msg: ChattingContent) => {
+    socket.on("reply", (msg: ChattingContent) => {
       dispatch({
-        type: "say",
-        payload: {
-          user: {
-            userId: 2,
-            nickname: "아무개",
-          },
-          content: msg,
-        },
+        type: "ADD_CONTENT",
+        payload: msg,
       });
     });
     return () => {
+      console.log("연결 종료");
       socket.close();
     };
   }, []);

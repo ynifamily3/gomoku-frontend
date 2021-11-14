@@ -1,31 +1,18 @@
-// import { useRecoilValue, useSetRecoilState } from "recoil";
-// import * as RecoilState from "./state/game";
-// import Gameboard from "./ui/Gameboard";
+import { HashRouter as Router, Route, Routes } from "react-router-dom";
 
-import Chatting from "./ui/Chatting";
+import IndexPage from "./pages";
+import GamePage from "./pages/game";
 
 const App = () => {
-  // const boardState = useRecoilValue(RecoilState.boardState);
-  // const boardUiState = useRecoilValue(RecoilState.boardUiState);
-  // const setter = useSetRecoilState(RecoilState.boardState);
-  // const handlePutPiece = (
-  //   position: RecoilState.Position,
-  //   piece: RecoilState.Piece
-  // ) => {
-  //   RecoilState.putPiece(setter, position, piece);
-  // };
-
   return (
-    <div>
-      <h1>gomoku</h1>
-      {/* <Gameboard
-        boardState={boardState}
-        boardUiState={boardUiState}
-        handlePutPiece={handlePutPiece}
-      /> */}
-      <h2>채팅센터</h2>
-      <Chatting />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/game">
+          <Route path=":gameId" element={<GamePage />} />
+        </Route>
+        <Route path="*" element={<IndexPage />} />
+      </Routes>
+    </Router>
   );
 };
 
