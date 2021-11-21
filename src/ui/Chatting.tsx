@@ -3,6 +3,7 @@ import { Fragment, useEffect, useReducer, useRef } from "react";
 import { DeepReadonly } from "ts-essentials";
 import io from "socket.io-client";
 import { getUUID } from "../util/uuid";
+import { getNickname, setNickname } from "../util/nickname";
 
 interface ChattingUser {
   userId: string;
@@ -39,8 +40,8 @@ type ChattingAction = {
 
 const initialState: ChattingState = {
   user: {
-    userId: "",
-    nickname: "손님",
+    userId: getUUID(),
+    nickname: getNickname(),
   },
   channel: "",
   contents: [todayMessage],
@@ -61,14 +62,14 @@ const reducer = (state: ChattingState, action: ChattingAction) => {
 
 const Chatting = () => {
   const socketRef = useRef<any>();
-  const uuid = getUUID();
   const [state, dispatch] = useReducer<typeof reducer>(reducer, {
     ...initialState,
-    user: {
-      ...initialState.user,
-      userId: uuid,
-    },
   });
+
+  const nicknameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    nicknameInputRef.current!.value = getNickname();
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") {
@@ -81,10 +82,16 @@ const Chatting = () => {
       return;
     }
     const value = value_.replaceAll("  ", " \u00a0");
+    if (nicknameInputRef.current!.value.length !== 0) {
+      setNickname(nicknameInputRef.current!.value);
+    } else {
+      setNickname("손님");
+      nicknameInputRef.current!.value = "손님";
+    }
     dispatch({
       type: "ADD_CONTENT",
       payload: {
-        user: state.user,
+        user: { ...state.user, nickname: nicknameInputRef.current!.value },
         content: value,
         date: dayjs(),
         type: "text",
@@ -94,10 +101,6 @@ const Chatting = () => {
     if (!socketRef.current) return;
     socketRef.current.emit("msg", value);
   };
-
-  useEffect(() => {
-    console.log("uuid:", uuid);
-  }, [uuid]);
 
   useEffect(() => {
     const socket = io("http://localhost:4000");
@@ -171,13 +174,25 @@ const Chatting = () => {
           })}
         </div>
       </div>
-      <div style={{ display: "flex", boxSizing: "border-box" }}>
+      <div
+        style={{
+          display: "flex",
+          boxSizing: "border-box",
+          marginTop: ".3em",
+          gap: ".3em",
+          width: "100%",
+        }}
+      >
+        <input
+          type="text"
+          style={{ margin: 0, width: "30px" }}
+          ref={nicknameInputRef}
+        />
         <input
           type="text"
           style={{ flex: 1, margin: 0 }}
           onKeyPress={handleKeyPress}
         />
-        {/* <button style={{ margin: 0 }} onClick={{}}>전송</button> */}
       </div>
     </div>
   );
